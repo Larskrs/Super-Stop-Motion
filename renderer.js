@@ -6,22 +6,19 @@ const { ipcRenderer } = require('electron');
 const video = document.getElementById('video');
 const captureButton = document.getElementById('capture-btn');
 const deleteButton = document.getElementById('delete-btn');
+const exportButton = document.getElementById('export-btn');
+const fullScreenButton = document.getElementById('fullscreen-btn')
 const nextFrameElement = document.getElementById('next-frame');
 const overlayElement = document.getElementById('overlay')
 
 // Set up the video stream
 async function startVideoStream() {
-    var constraints = { 
-        video: {
-            width: { ideal: 4096 },
-            height: { ideal: 2160 } 
-        } 
-    };
-    
-  const stream = await navigator.mediaDevices.getUserMedia({         video: {
-    width: { ideal: 4096 },
-    height: { ideal: 2160 } 
-}  });
+  const stream = await navigator.mediaDevices.getUserMedia({ 
+    video: {
+      width: { ideal: 4096 },
+      height: { ideal: 2160 } 
+    }
+  });
   video.srcObject = stream;
 }
 
@@ -49,7 +46,7 @@ captureButton.addEventListener('click', async () => {
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
   
   // Convert canvas to base64-encoded PNG
-  const imageData = canvas.toDataURL('image/png', 0.9).replace(/^data:image\/png;base64,/, '');
+  const imageData = canvas.toDataURL('image/png', 1.0).replace(/^data:image\/png;base64,/, '');
 
   // Send the image data to the main process for saving
   const filename = await ipcRenderer.invoke('save-frame', imageData);
@@ -67,6 +64,16 @@ deleteButton.addEventListener('click', async () => {
     updateNextFrameName(); // Update frame name after deletion
   }
 });
+
+fullScreenButton.addEventListener('click', async () => {
+  await ipcRenderer.invoke('toggle-fullscreen')
+})
+
+exportButton.addEventListener('click', async () => {
+  const exported = await ipcRenderer.invoke('export-movie');
+})
+
+
 
 // Update the next frame name when the app starts
 updateNextFrameName();
