@@ -7,8 +7,10 @@ const fs = require('fs');
 // Create a window
 function createWindow() {
   const win = new BrowserWindow({
+    icon: __dirname + "/icon.png",
     width: 800,
     height: 600,
+    title: "Aktuelt Motion Studio",
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'renderer.js'),
@@ -32,41 +34,44 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Get the next frame number
-ipcMain.handle('get-next-frame-number', async () => {
-  const dir = path.join(__dirname, 'frames');
+function getDir () {
+  return path.join(__dirname, 'frames');
+}
+
+function getFrameList () {
+  const dir = getDir()
 
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
   }
 
   const files = fs.readdirSync(dir);
+  const filtered = files.filter((f) => 
+    f.endsWith(".png")
+  )
+
+  console.log(filtered.length)
+
+  return filtered
+}
+
+// Get the next frame number
+ipcMain.handle('get-next-frame-number', async () => {
+  const files = getFrameList()
   const lastFrameNumber = files.length;
   const nextFrameNumber = (lastFrameNumber + 1).toString().padStart(3, '0');
   return `FRAME_${nextFrameNumber}.png`;
 });
 // Get the current frame number
 ipcMain.handle('get-current-frame-number', async () => {
-  const dir = path.join(__dirname, 'frames');
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
-
-  const files = fs.readdirSync(dir);
+  const files = getFrameList()
   const lastFrameNumber = files.length;
   const nextFrameNumber = (lastFrameNumber).toString().padStart(3, '0');
   return `FRAME_${nextFrameNumber}.png`;
 });
 
 ipcMain.handle('get-current-frame-image', async () => {
-    const dir = path.join(__dirname, 'frames');
-  
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-    }
-  
-    const files = fs.readdirSync(dir);
+    const files = getFrameList()
     const lastFrameNumber = files.length;
     const nextFrameNumber = (lastFrameNumber).toString().padStart(3, '0');
     const address = `${__dirname}/frames/FRAME_${nextFrameNumber}.png`
@@ -77,13 +82,8 @@ ipcMain.handle('get-current-frame-image', async () => {
 
 // Save a new frame
 ipcMain.handle('save-frame', async (event, imageData) => {
-  const dir = path.join(__dirname, 'frames');
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
-
-  const files = fs.readdirSync(dir);
+  const dir = getDir()
+  const files = getFrameList()
   const lastFrameNumber = files.length;
   const newFrameNumber = (lastFrameNumber + 1).toString().padStart(3, '0');
   const filename = `FRAME_${newFrameNumber}.png`;
@@ -97,13 +97,8 @@ ipcMain.handle('save-frame', async (event, imageData) => {
 
 // Delete the latest frame
 ipcMain.handle('delete-last-frame', async () => {
-  const dir = path.join(__dirname, 'frames');
-
-  if (!fs.existsSync(dir)) {
-    return null;
-  }
-
-  const files = fs.readdirSync(dir).sort(); // Sort to ensure the files are ordered
+  const dir = getDir()
+  const files = getFrameList().sort(); // Sort to ensure the files are ordered
   if (files.length === 0) {
     return null;
   }
